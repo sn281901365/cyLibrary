@@ -1,0 +1,42 @@
+def TurboWrite(mydb, schema, df, table):
+    """Use turbodbc to insert data into sql."""
+    start = time.time()
+    # preparing columns
+    cols = '('
+    cols += ', '.join(df.columns)
+    cols += ')'
+    # preparing value place holders
+    val_place_holder = ['?' for col in df.columns]
+    sql_val = '('
+    sql_val += ', '.join(val_place_holder)
+    sql_val += ')'
+    # writing sql query for turbodbc
+    sql = f"""
+    INSERT INTO {mydb}.{schema}.{table} {cols}
+    VALUES {sql_val}
+    """
+
+    # writing array of values for turbodbc
+    val_df = [df[col].values for col in df.columns]
+
+    # cleans the previous head insert
+    #with connection.cursor() as cursor:
+    #    cursor.execute(f"delete from {mydb}.{schema}.{table}")
+    #    connection.commit()
+
+    # inserts data, for real
+    with connection.cursor() as cursor:
+        try:
+            cursor.executemanycolumns(sql, val_df)
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            print('something went wrong')
+
+    stop = time.time() - start
+    return print(f'finished in {stop} seconds')
+# Usage:
+# mydb = 'ACDW_CLMS_SHCN_BCBS'
+# schema = 'adi' 
+# table = 'TestTable'
+# TurboWrite(mydb,schema,df,table)
